@@ -1,5 +1,5 @@
 
-VERSION = "dev2"
+VERSION = "dev3"
 
 import random as rand
 import math
@@ -36,7 +36,7 @@ class Dialouge:
         self.person = person
 
 DP_TUTORIAL = DialougePerson(name="Tutorial",sound=pyg.mixer.Sound(sound("uh.wav")))
-DP_SIGN = DialougePerson(name="Sign",sound=pyg.mixer.Sound(sound("uh.wav")))
+DP_SIGN = DialougePerson(name="Sign",icon=img("dialouge/sign.png"),sound=pyg.mixer.Sound(sound("uh.wav")))
 
 class Tile:
     def __init__(self,pos:tuple[int,int],id:str):
@@ -53,20 +53,47 @@ class Tile:
             self.texture = "notexture"
             self.id = "error"
 
+class Entity:
+    def __init__(self):
+        self.pos = [0,0]
+        self.texture:pyg.Surface = img("placeholderentity1.png")
+    def frame(self):
+        pass
+    def interact(self):
+        pass
+class Sign(Entity):
+    def __init__(self,texts:tuple[str,...],pos:tuple[int,int]):
+        super().__init__()
+        self.pos = pos
+        self.texture = img("sign.png")
+        self.dialouges = []
+        for _text in texts:
+            self.dialouges.append(Dialouge(_text,DP_SIGN))
+    def frame(self):
+        pass
+    def interact(self):
+        state.dialouge = self.dialouges[0]
+        state.dialougequeue = self.dialouges[1:]
+
 class Level:
     def __init__(self):
         self.seed = rand.randint(-999,999)
         self.noise = noise.PerlinNoise(5,self.seed)
         self.tiles:dict[tuple[int,int],Tile] = {}
+        self.entities:dict[tuple[int,int],Entity] = {}
 
     def gen(self,pos:tuple[int,int]):
         _perlin = self.noise((pos[0]/50,pos[1]/50))
+        # entities
+        if pos == (0,0):
+            self.entities[pos] = Sign(("Welcome to Cat Simulator!",f"Seed: {self.seed}"),(0,0))
+        # tiles
         if _perlin > 0.2:
-            self.tiles[pos] = (Tile(pos,"stone"))
+            self.tiles[pos] = Tile(pos,"stone")
         elif _perlin < -0.2:
-            self.tiles[pos] = (Tile(pos,"water"))
+            self.tiles[pos] = Tile(pos,"water")
         else:
-            self.tiles[pos] = (Tile(pos,"grass"))
+            self.tiles[pos] = Tile(pos,"grass")
 
         
     def genrect(self,rect:tuple[tuple[int,int],tuple[int,int]]):
@@ -76,22 +103,20 @@ class Level:
 
     def findpostile(self,pos:tuple[int,int]) -> bool:
         return pos in self.tiles.keys()
-
+    def findposentity(self,pos:tuple[int,int]) -> bool:
+        return pos in self.entities.keys()
 
 class GameState:
     def __init__(self):
         self.level = Level()
-        self.plr_pos = [0,0]
-        self.plr_tile = [0,0]
+        self.plr_pos:list[int] = [0,0]
+        self.plr_tile:list[int] = [0,0]
         self.dialouge:Dialouge|None = None
         self.dialougequeue:list[Dialouge]=[]
 state = GameState()
 
 print(f"Seed: {state.level.seed}")
 state.level.genrect(((-8,-5),(16,10)))
-
-state.dialouge = Dialouge("test dialogue",DP_SIGN)
-state.dialougequeue.append(Dialouge(f"Seed: {state.level.seed}",DP_SIGN))
 
 while running:
     # events
@@ -126,6 +151,9 @@ while running:
                     else:
                         state.dialouge = state.dialougequeue[0]
                         state.dialougequeue.pop(0)
+            elif event.key == pyg.K_e:
+                if state.level.findposentity((state.plr_tile[0],state.plr_tile[1])):
+                    state.level.entities[(state.plr_tile[0],state.plr_tile[1])].interact()
         elif event.type == pyg.QUIT:
             running = False
 
@@ -145,7 +173,10 @@ while running:
                 screen.blit(img(f"tiles/{_tile.texture}.png"),(_tile.pos[0]*50 + -1*state.plr_pos[0] + 350, _tile.pos[1]*50 + -1*state.plr_pos[1] + 200))
             else:
                 state.level.gen((x,y))
-    
+    ## entities
+    for _entity in state.level.entities.values():
+        screen.blit(_entity.texture,(_entity.pos[0]*50 + -1*state.plr_pos[0] + 350, _entity.pos[1]*50 + -1*state.plr_pos[1] + 200))
+
     ## crosshair
     screen.blit(img("overlay1.png"),(0,0))
     ## dialouge

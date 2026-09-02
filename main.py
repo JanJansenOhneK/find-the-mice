@@ -1,8 +1,9 @@
 
-VERSION = "dev5"
+VERSION = "dev6"
 
 import random as rand
 import math
+import json
 
 import pygame as pyg
 import perlin_noise as noise
@@ -11,6 +12,8 @@ screen = pyg.display.set_mode((700,400),pyg.RESIZABLE|pyg.SCALED)
 running = True
 pyg.init()
 pyg.display.set_caption(f"Find the mice | v. {VERSION}")
+
+levelfile = open("save/level1.json","w+")
 
 def asset():
     return f"assets/"
@@ -25,7 +28,7 @@ def text(text:str,size:int=20,color:tuple[int,int,int]=(255,255,255),font:str="f
     return pyg.font.Font(f"{asset()}{font}.ttf",size).render(text,False,color)
 
 class DialougePerson:
-    def __init__(self,name:str,sound:pyg.Sound=sound("uh.wav"),icon:pyg.Surface|None=None):
+    def __init__(self,name:str,sound:str="uh.wav",icon:str|None=None):
         self.name = name
         self.sound = sound
         self.icon = icon
@@ -35,7 +38,7 @@ class Dialouge:
         self.text = text
         self.person = person
 
-DP_SIGN = DialougePerson(name="Sign",icon=img("dialouge/sign.png"),sound=pyg.mixer.Sound(sound("uh.wav")))
+DP_SIGN = DialougePerson(name="Sign",icon="dialouge/sign.png",sound="uh.wav")
 
 class Tile:
     def __init__(self,pos:tuple[int,int],id:str,perlin:float):
@@ -59,7 +62,7 @@ class Tile:
 class Entity:
     def __init__(self):
         self.pos = [0,0]
-        self.texture:pyg.Surface = img("placeholderentity1.png")
+        self.texture:str = "placeholderentity1.png"
         self.interactable = False
     def frame(self):
         pass
@@ -69,7 +72,7 @@ class Sign(Entity):
     def __init__(self,texts:tuple[str,...],pos:tuple[int,int]):
         super().__init__()
         self.pos = pos
-        self.texture = img("sign.png")
+        self.texture = "sign.png"
         self.dialouges = []
         self.interactable = True
         for _text in texts:
@@ -80,7 +83,7 @@ class Sign(Entity):
         state.dialouge = self.dialouges[0]
         state.dialougequeue = self.dialouges[1:]
 class Mouse(Entity):
-    def __init__(self,texts:tuple[str,...],dp:DialougePerson,pos:tuple[int,int],textures:tuple[pyg.Surface,...],fpf:int=5):
+    def __init__(self,texts:tuple[str,...],dp:DialougePerson,pos:tuple[int,int],textures:tuple[str,...],fpf:int=5):
         super().__init__()
         self.pos = pos
         self.textures = textures
@@ -95,12 +98,16 @@ class Mouse(Entity):
             self.dialouges.append(Dialouge(_text,self.dp))
     def frame(self):
         if self.textureframe % self.fpf == 0:
-            self.texture = self.textures[self.textureframe // self.fpf].copy()
+            self.texture = self.textures[self.textureframe // self.fpf]
         self.textureframe += 1
         self.textureframe = self.textureframe % (len(self.textures)*self.fpf)
     def interact(self):
+        if self.found:
+            print(f"{self.dp.name} already found")
+        else:
+            print(f"{self.dp.name} found")
+            
         self.found = True
-        print(f"{self.dp.name} found")
         state.dialouge = self.dialouges[0]
         state.dialougequeue = self.dialouges[1:]
 
@@ -148,12 +155,11 @@ f"Seed: {self.seed}")
 "Test dialouge",
 "Also Test dialouge",
 "Maus"),DialougePerson("Test Mouse"),(1,0),(
-img("mice/normal.png"),
-img("mice/normal2.png"),
-img("mice/normal3.png"),
+"mice/normal.png",
+"mice/normal2.png",
+"mice/normal3.png",
 ))
             
-        
     def genrect(self,rect:tuple[tuple[int,int],tuple[int,int]]):
         for x in range(rect[1][0]):
             for y in range(rect[1][1]):
@@ -163,6 +169,54 @@ img("mice/normal3.png"),
         return pos in self.tiles.keys()
     def findposentity(self,pos:tuple[int,int]) -> bool:
         return pos in self.entities.keys()
+
+    def savefile(self) -> None:
+        print("saving level")
+        global levelfile
+        levelfile.seek(0)
+        leveldict = {
+            "plrpos":[state.plr_pos[0],state.plr_pos[1]],
+            "seed":self.seed,
+            "tiles":[],
+            "entities":{"signs":[],"mice":[]}
+        }
+        """
+        for tile in self.tiles.values():
+            leveldict["tiles"].append({
+                "pos":list(tile.pos),
+                "id":tile.id
+            })
+        """
+        for entity in self.entities.values():
+            if type(entity) == Sign:
+                _dict = {
+                    "pos":list(entity.pos),
+                    "texts":[],
+                    "texture":entity.texture
+                }
+                for dialouge in entity.dialouges:
+                    _dict["texts"].append(dialouge.text)
+                leveldict["entities"]["signs"].append(_dict)
+
+            elif type(entity) == Mouse:
+                _dict = {
+                    "pos":list(entity.pos),
+                    "texts":[],
+                    "textures":list(entity.textures),
+                    "fpf":entity.fpf,
+                    "found":entity.found,
+                    "dp":{"name":entity.dp.name,"icon":entity.dp.icon,"sound":entity.dp.sound}
+                }
+                for dialouge in entity.dialouges:
+                    _dict["texts"].append(dialouge.text)
+                leveldict["entities"]["mice"].append(_dict)
+        json.dump(leveldict,levelfile)
+
+"""
+def loadlevel() -> Level:
+    dict = json.load(levelfile)
+    level = Level()
+"""
 
 class GameState:
     def __init__(self):
@@ -244,7 +298,7 @@ while running:
 
         _entity.frame()
         _pos = (_entity.pos[0]*50 + -1*state.plr_pos[0] + 350, _entity.pos[1]*50 + -1*state.plr_pos[1] + 200)
-        screen.blit(_entity.texture,_pos)
+        screen.blit(img(_entity.texture),_pos)
 
         if [_entity.pos[0]*1,_entity.pos[1]*1] == state.plr_tile:
             if state.dialouge == None:
@@ -262,12 +316,13 @@ while running:
             screen.blit(text(state.dialouge.person.name),(10,310))
             screen.blit(text(state.dialouge.text,size=30),(10,330))
         else:
-            screen.blit(state.dialouge.person.icon,(0,300))
+            screen.blit(img(state.dialouge.person.icon),(0,300))
             screen.blit(text(state.dialouge.person.name),(110,310))
             screen.blit(text(state.dialouge.text,size=30),(110,330))
 
 
     pyg.display.flip()
 
+state.level.savefile()
+levelfile.close()
 pyg.quit()
-

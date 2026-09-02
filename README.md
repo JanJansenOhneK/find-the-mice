@@ -32,3 +32,8 @@
 ### MAJOR FEATURES
 #### added test mouse
 - spawns at (1,0)
+## dev 6 (First Version that saves savefiles!)
+### BUGFIX
+### MINOR FEATURES
+### MAJOR FEATURES
+#### added save files (only saveable not loadable)

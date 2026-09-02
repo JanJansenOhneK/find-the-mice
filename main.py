@@ -1,5 +1,5 @@
 
-VERSION = "dev4"
+VERSION = "dev5"
 
 import random as rand
 import math
@@ -10,7 +10,7 @@ import perlin_noise as noise
 screen = pyg.display.set_mode((700,400),pyg.RESIZABLE|pyg.SCALED)
 running = True
 pyg.init()
-pyg.display.set_caption(f"JanJansen's Cat Simulator | v. {VERSION}")
+pyg.display.set_caption(f"Find the mice | v. {VERSION}")
 
 def asset():
     return f"assets/"
@@ -25,7 +25,7 @@ def text(text:str,size:int=20,color:tuple[int,int,int]=(255,255,255),font:str="f
     return pyg.font.Font(f"{asset()}{font}.ttf",size).render(text,False,color)
 
 class DialougePerson:
-    def __init__(self,name:str,sound:pyg.Sound,icon:pyg.Surface|None=None):
+    def __init__(self,name:str,sound:pyg.Sound=sound("uh.wav"),icon:pyg.Surface|None=None):
         self.name = name
         self.sound = sound
         self.icon = icon
@@ -35,7 +35,6 @@ class Dialouge:
         self.text = text
         self.person = person
 
-DP_TUTORIAL = DialougePerson(name="Tutorial",sound=pyg.mixer.Sound(sound("uh.wav")))
 DP_SIGN = DialougePerson(name="Sign",icon=img("dialouge/sign.png"),sound=pyg.mixer.Sound(sound("uh.wav")))
 
 class Tile:
@@ -50,7 +49,7 @@ class Tile:
         elif id == "water":
             self.texture = "water1"
         elif id == "sand":
-            self.texture = "sand1"
+            self.texture = "sand5"
         elif id == "snow":
             self.texture = "snow1"
         else:
@@ -80,6 +79,31 @@ class Sign(Entity):
     def interact(self):
         state.dialouge = self.dialouges[0]
         state.dialougequeue = self.dialouges[1:]
+class Mouse(Entity):
+    def __init__(self,texts:tuple[str,...],dp:DialougePerson,pos:tuple[int,int],textures:tuple[pyg.Surface,...],fpf:int=5):
+        super().__init__()
+        self.pos = pos
+        self.textures = textures
+        self.textureframe = 0
+        self.fpf = fpf
+        self.texture = self.textures[0]
+        self.dialouges = []
+        self.dp = dp
+        self.interactable = True
+        self.found = False
+        for _text in texts:
+            self.dialouges.append(Dialouge(_text,self.dp))
+    def frame(self):
+        if self.textureframe % self.fpf == 0:
+            self.texture = self.textures[self.textureframe // self.fpf].copy()
+        self.textureframe += 1
+        self.textureframe = self.textureframe % (len(self.textures)*self.fpf)
+    def interact(self):
+        self.found = True
+        print(f"{self.dp.name} found")
+        state.dialouge = self.dialouges[0]
+        state.dialougequeue = self.dialouges[1:]
+
 
 class Level:
     def __init__(self):
@@ -89,23 +113,9 @@ class Level:
         self.entities:dict[tuple[int,int],Entity] = {}
 
     def gen(self,pos:tuple[int,int]):
-        _perlin = self.noise((pos[0]/100,pos[1]/100))
+        _perlin = self.noise((pos[0]/50,pos[1]/50))
         _type = "error"
-        # entities
-        if pos == (0,0):
-            self.entities[pos] = Sign((
-"(Press [E] to advance dialouge)",
-"Welcome to Find the Mice!",
-"This game is about finding mice.",
-"Move your camera with [W] [A] [S] [D].",
-"Be faster by pressing [Left CTRL] while moving.",
-"If you found one...",
-"...move your crosshair over it and press [E].",
-"(like you did on this sign!)",
-"Your goal is to find all mice",
-"Have fun!",
-f"Seed: {self.seed}")
-            ,(0,0))
+
         # tiles
         if _perlin > 0.4:
             _type = "snow"
@@ -117,8 +127,32 @@ f"Seed: {self.seed}")
             _type = "sand"
         else:
             _type = "grass"
-
         self.tiles[pos] = Tile(pos,_type,_perlin)
+
+        # entities
+        if pos == (0,0):
+            self.entities[pos] = Sign((
+"(Press [E] to advance dialouge)",
+"Welcome to Find the Mice!",
+"This game is about finding mice.",
+"Move your camera with [W] [A] [S] [D].",
+"Be faster by pressing [Left CTRL] while moving.",
+"If you found one...",
+"...move your crosshair over it and press [E].",
+"Your goal is to find all mice",
+"Have fun!",
+f"Seed: {self.seed}")
+            ,(0,0))
+        elif pos == (1,0):
+            self.entities[pos] = Mouse((
+"Test dialouge",
+"Also Test dialouge",
+"Maus"),DialougePerson("Test Mouse"),(1,0),(
+img("mice/normal.png"),
+img("mice/normal2.png"),
+img("mice/normal3.png"),
+))
+            
         
     def genrect(self,rect:tuple[tuple[int,int],tuple[int,int]]):
         for x in range(rect[1][0]):
@@ -200,7 +234,7 @@ while running:
 
                 _overlay = pyg.Surface((50,50))
                 _overlay.fill((0,0,0))
-                _overlay.set_alpha(round(((abs(_tile.perlin) - abs(state.level.tiles[(state.plr_tile[0],state.plr_tile[1])].perlin))*-200)))
+                _overlay.set_alpha(round(((abs(_tile.perlin) - abs(state.level.tiles[(state.plr_tile[0],state.plr_tile[1])].perlin))*-100)))
                 screen.blit(_overlay,_pos)
 
             else:
@@ -208,6 +242,7 @@ while running:
     ## entities
     for _entity in state.level.entities.values():
 
+        _entity.frame()
         _pos = (_entity.pos[0]*50 + -1*state.plr_pos[0] + 350, _entity.pos[1]*50 + -1*state.plr_pos[1] + 200)
         screen.blit(_entity.texture,_pos)
 

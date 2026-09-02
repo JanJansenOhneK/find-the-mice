@@ -24,3 +24,11 @@
 - added height effect
 - added hint to press e when interacting
 - added tutorial on sign
+## dev 5
+### BUGFIX
+### MINOR FEATURES
+- fixed window title
+- retextured sand
+### MAJOR FEATURES
+#### added test mouse
+- spawns at (1,0)

@@ -37,3 +37,9 @@
 ### MINOR FEATURES
 ### MAJOR FEATURES
 #### added save files (only saveable not loadable)
+## dev 7 (First Version with GUI!)
+### BUGFIX
+### MINOR FEATURES
+### MAJOR FEATURES
+#### ADDED GUI
+- press escape ingame to return to the main menu

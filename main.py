@@ -1,5 +1,5 @@
 
-VERSION = "dev6"
+VERSION = "dev7"
 
 import random as rand
 import math
@@ -218,6 +218,43 @@ def loadlevel() -> Level:
     level = Level()
 """
 
+class GUIElement:
+    def __init__(self,pos:tuple[int,int]):
+        self.pos = pos
+    def frame(self):
+        pass
+
+class GUIButton(GUIElement):
+    def __init__(self,pos:tuple[int, int],size:tuple[int,int]):
+        self.pos = pos
+        self.size = size
+        self.hovered = False
+    def frame(self):
+        _pos = pyg.mouse.get_pos()
+        if _pos[0] >= self.pos[0]:
+            if _pos[0] <= self.pos[0] + self.size[0]:
+                if _pos[1] >= self.pos[1]:
+                    if _pos[1] <= self.pos[1] + self.size[1]:
+                        self.hovered = True
+                        return
+
+        self.hovered = False
+
+class GUITextButton(GUIButton):
+    def __init__(self, pos:tuple[int, int], textstr:str):
+        self.pos = pos
+        self.text = textstr
+        self.size = text(f" {self.text} ").get_size()
+        self.hovered = False
+    def frame(self):
+        self.size = text(f" {self.text} ").get_size()
+        super().frame()
+
+class GUI:
+    def __init__(self,elements:dict[str,GUIElement],caption:str=""):
+        self.caption = caption
+        self.elements = elements
+
 class GameState:
     def __init__(self):
         self.level = Level()
@@ -225,7 +262,29 @@ class GameState:
         self.plr_tile:list[int] = [0,0]
         self.dialouge:Dialouge|None = None
         self.dialougequeue:list[Dialouge]=[]
+
+        self.menus:dict[str,GUI] = {
+            "mainmenu":GUI({
+                "newgame":GUITextButton((100,100),"New Game"),
+                "continue":GUITextButton((100,130),"Continue"),
+                "quit":GUITextButton((100,170),"Quit"),
+            })
+        }
+        self.menuopen = True
+        self.menuid = "mainmenu"
+        self.buttonclicked = False
+        self.buttonid = ""
+
 state = GameState()
+
+def set_menu(id:str):
+    state.menuid = id
+    state.buttonid = ""
+    state.buttonclicked = False
+    state.menuopen = True
+
+def close_menu():
+    state.menuopen = False
 
 print(f"Seed: {state.level.seed}")
 state.level.genrect(((-8,-5),(16,10)))
@@ -252,7 +311,8 @@ while running:
                 state.plr_pos[1] += 5
             if pyg.key.get_pressed()[pyg.K_w] or pyg.key.get_pressed()[pyg.K_UP]:
                 state.plr_pos[1] += -5
-    
+
+    _leftclick = False
     for event in pyg.event.get():
         #print(event)
         if event.type == pyg.KEYDOWN:
@@ -266,62 +326,111 @@ while running:
                     else:
                         state.dialouge = state.dialougequeue[0]
                         state.dialougequeue.pop(0)
+            elif event.key == pyg.K_ESCAPE:
+                set_menu("mainmenu")
+
+        elif event.type == pyg.MOUSEBUTTONDOWN:
+            if event.button == pyg.BUTTON_LEFT:
+                _leftclick = True
+
         elif event.type == pyg.QUIT:
             running = False
+
+    if state.menuopen:
+        if _leftclick:
+            state.buttonclicked = True
+        else:
+            state.buttonclicked = False
+    else:
+        state.buttonclicked = False
 
     # other
     ## plr tile
     state.plr_tile[0] = math.floor(state.plr_pos[0]/50)
     state.plr_tile[1] = math.floor(state.plr_pos[1]/50)
+    ## buttons
+    if state.buttonclicked:
+        print(f"Button clicked ID: {state.buttonid}")
+        if state.buttonid == "quit":
+            running = False
+        elif state.buttonid == "continue":
+            print("closing")
+            close_menu()
 
     # render
     ## black bg
     screen.fill((0,0,0))
-    ## tiles
-    for x in range(state.plr_tile[0]-8, state.plr_tile[0]+9):
-        for y in range(state.plr_tile[1]-5, state.plr_tile[1]+6):
-            if state.level.findpostile((x,y)):
+    if state.menuopen:
+        ## elements
+        _id = ""
+        for i,element in enumerate(state.menus[state.menuid].elements.values()):
+            element.frame()
+            _surface = pyg.Surface((69,69))
+            if type(element) == GUIButton:
+                _surface = pyg.Surface(element.size)
+                if element.hovered:
+                    _id = list(state.menus[state.menuid].elements.keys())[i]
+                    _surface.fill((130,130,130))
+                else:
+                    _surface.fill((100,100,100))
+            elif type(element) == GUITextButton:
+                _surface = pyg.Surface(element.size)
+                if element.hovered:
+                    _id = list(state.menus[state.menuid].elements.keys())[i]
+                    _surface.fill((130,130,130))
+                else:
+                    _surface.fill((100,100,100))
+                _surface.blit(text(f" {element.text} "))
 
-                _tile = state.level.tiles[(x,y)]
-                _pos = (_tile.pos[0]*50 + -1*state.plr_pos[0] + 350, _tile.pos[1]*50 + -1*state.plr_pos[1] + 200)
-                screen.blit(img(f"tiles/{_tile.texture}.png"),_pos)
-
-                _overlay = pyg.Surface((50,50))
-                _overlay.fill((0,0,0))
-                _overlay.set_alpha(round(((abs(_tile.perlin) - abs(state.level.tiles[(state.plr_tile[0],state.plr_tile[1])].perlin))*-100)))
-                screen.blit(_overlay,_pos)
-
-            else:
-                state.level.gen((x,y))
-    ## entities
-    for _entity in state.level.entities.values():
-
-        _entity.frame()
-        _pos = (_entity.pos[0]*50 + -1*state.plr_pos[0] + 350, _entity.pos[1]*50 + -1*state.plr_pos[1] + 200)
-        screen.blit(img(_entity.texture),_pos)
-
-        if [_entity.pos[0]*1,_entity.pos[1]*1] == state.plr_tile:
-            if state.dialouge == None:
-
-                _pos = (_entity.pos[0]*50 + -1*state.plr_pos[0] + 350 -50, _entity.pos[1]*50 + -1*state.plr_pos[1] + 200 -50)
-                screen.blit(img("ehint.png"),_pos)
-    ## crosshair
-    screen.blit(img("overlay1.png"),(0,0))
-    ## dialouge
-    if state.dialouge == None:
-        pass
+            screen.blit(_surface,element.pos)
+        state.buttonid = _id
     else:
-        pyg.draw.rect(screen,(0,0,0),pyg.Rect(0,300,700,100))
-        if state.dialouge.person.icon == None:
-            screen.blit(text(state.dialouge.person.name),(10,310))
-            screen.blit(text(state.dialouge.text,size=30),(10,330))
-        else:
-            screen.blit(img(state.dialouge.person.icon),(0,300))
-            screen.blit(text(state.dialouge.person.name),(110,310))
-            screen.blit(text(state.dialouge.text,size=30),(110,330))
+        ## tiles
+        for x in range(state.plr_tile[0]-8, state.plr_tile[0]+9):
+            for y in range(state.plr_tile[1]-5, state.plr_tile[1]+6):
+                if state.level.findpostile((x,y)):
 
+                    _tile = state.level.tiles[(x,y)]
+                    _pos = (_tile.pos[0]*50 + -1*state.plr_pos[0] + 350, _tile.pos[1]*50 + -1*state.plr_pos[1] + 200)
+                    screen.blit(img(f"tiles/{_tile.texture}.png"),_pos)
+
+                    _overlay = pyg.Surface((50,50))
+                    _overlay.fill((0,0,0))
+                    _overlay.set_alpha(round(((abs(_tile.perlin) - abs(state.level.tiles[(state.plr_tile[0],state.plr_tile[1])].perlin))*-100)))
+                    screen.blit(_overlay,_pos)
+
+                else:
+                    state.level.gen((x,y))
+        ## entities
+        for _entity in state.level.entities.values():
+
+            _entity.frame()
+            _pos = (_entity.pos[0]*50 + -1*state.plr_pos[0] + 350, _entity.pos[1]*50 + -1*state.plr_pos[1] + 200)
+            screen.blit(img(_entity.texture),_pos)
+
+            if [_entity.pos[0]*1,_entity.pos[1]*1] == state.plr_tile:
+                if state.dialouge == None:
+
+                    _pos = (_entity.pos[0]*50 + -1*state.plr_pos[0] + 350 -50, _entity.pos[1]*50 + -1*state.plr_pos[1] + 200 -50)
+                    screen.blit(img("ehint.png"),_pos)
+        ## crosshair
+        screen.blit(img("overlay1.png"),(0,0))
+        ## dialouge
+        if state.dialouge == None:
+            pass
+        else:
+            pyg.draw.rect(screen,(0,0,0),pyg.Rect(0,300,700,100))
+            if state.dialouge.person.icon == None:
+                screen.blit(text(state.dialouge.person.name),(10,310))
+                screen.blit(text(state.dialouge.text,size=30),(10,330))
+            else:
+                screen.blit(img(state.dialouge.person.icon),(0,300))
+                screen.blit(text(state.dialouge.person.name),(110,310))
+                screen.blit(text(state.dialouge.text,size=30),(110,330))
 
     pyg.display.flip()
+
+    #print(state.buttonid,state.buttonclicked)
 
 state.level.savefile()
 levelfile.close()

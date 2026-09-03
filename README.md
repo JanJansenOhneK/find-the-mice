@@ -43,3 +43,9 @@
 ### MAJOR FEATURES
 #### ADDED GUI
 - press escape ingame to return to the main menu
+## dev 7 (First Version with loadable Savefiles!)
+### BUGFIX
+- now you cannot exit to main menu while dialouging
+### MINOR FEATURES
+### MAJOR FEATURES
+#### made save files loadable!

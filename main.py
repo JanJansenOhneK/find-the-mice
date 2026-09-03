@@ -1,5 +1,5 @@
 
-VERSION = "dev7"
+VERSION = "dev8"
 
 import random as rand
 import math
@@ -13,7 +13,7 @@ running = True
 pyg.init()
 pyg.display.set_caption(f"Find the mice | v. {VERSION}")
 
-levelfile = open("save/level1.json","w+")
+levelfile = open("save/level1.json","r+")
 
 def asset():
     return f"assets/"
@@ -173,11 +173,11 @@ f"Seed: {self.seed}")
     def savefile(self) -> None:
         print("saving level")
         global levelfile
+        levelfile.truncate(0)
         levelfile.seek(0)
         leveldict = {
             "plrpos":[state.plr_pos[0],state.plr_pos[1]],
             "seed":self.seed,
-            "tiles":[],
             "entities":{"signs":[],"mice":[]}
         }
         """
@@ -191,8 +191,7 @@ f"Seed: {self.seed}")
             if type(entity) == Sign:
                 _dict = {
                     "pos":list(entity.pos),
-                    "texts":[],
-                    "texture":entity.texture
+                    "texts":[]
                 }
                 for dialouge in entity.dialouges:
                     _dict["texts"].append(dialouge.text)
@@ -212,11 +211,33 @@ f"Seed: {self.seed}")
                 leveldict["entities"]["mice"].append(_dict)
         json.dump(leveldict,levelfile)
 
-"""
-def loadlevel() -> Level:
-    dict = json.load(levelfile)
-    level = Level()
-"""
+
+def loadlevel():
+    levelfile.seek(0)
+    _dict = json.load(levelfile)
+    _level = Level()
+    _level.seed = _dict["seed"]
+    for _sign in _dict["entities"]["signs"]:
+        _signobj = Sign(tuple(_sign["texts"]),_sign["pos"])
+        _level.entities[tuple(_sign["pos"])] = _signobj
+    for _mouse in _dict["entities"]["mice"]:
+        _mouseobj = Mouse(
+            tuple(_mouse["texts"]),
+            DialougePerson(_mouse["dp"]["name"],_mouse["dp"]["sound"],_mouse["dp"]["icon"]),
+            _mouse["pos"],
+            tuple(_mouse["textures"]),
+            _mouse["fpf"]
+        )
+        _mouseobj.found = _mouse["found"]
+        _level.entities[tuple(_mouse["pos"])] = _mouseobj
+    state.plr_pos = [_dict["plrpos"][0],_dict["plrpos"][1]]
+    _level.noise = noise.PerlinNoise(5,_level.seed)
+    state.level = _level
+
+def loadnewlevel():
+    state.plr_pos = [25,25]
+    state.level = Level()
+
 
 class GUIElement:
     def __init__(self,pos:tuple[int,int]):
@@ -278,6 +299,8 @@ class GameState:
 state = GameState()
 
 def set_menu(id:str):
+    if not state.menuopen:
+        state.level.savefile()
     state.menuid = id
     state.buttonid = ""
     state.buttonclicked = False
@@ -285,6 +308,8 @@ def set_menu(id:str):
 
 def close_menu():
     state.menuopen = False
+
+loadnewlevel()
 
 print(f"Seed: {state.level.seed}")
 state.level.genrect(((-8,-5),(16,10)))
@@ -327,7 +352,8 @@ while running:
                         state.dialouge = state.dialougequeue[0]
                         state.dialougequeue.pop(0)
             elif event.key == pyg.K_ESCAPE:
-                set_menu("mainmenu")
+                if state.dialouge == None:
+                    set_menu("mainmenu")
 
         elif event.type == pyg.MOUSEBUTTONDOWN:
             if event.button == pyg.BUTTON_LEFT:
@@ -354,7 +380,12 @@ while running:
         if state.buttonid == "quit":
             running = False
         elif state.buttonid == "continue":
-            print("closing")
+            print("continuing")
+            loadlevel()
+            close_menu()
+        elif state.buttonid == "newgame":
+            print("newgame")
+            loadnewlevel()
             close_menu()
 
     # render

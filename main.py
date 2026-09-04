@@ -1,5 +1,5 @@
 
-VERSION = "dev8"
+VERSION = "dev9"
 
 import random as rand
 import math
@@ -10,13 +10,24 @@ import perlin_noise as noise
 
 screen = pyg.display.set_mode((700,400),pyg.RESIZABLE|pyg.SCALED)
 running = True
+clock = pyg.Clock()
 pyg.init()
 pyg.display.set_caption(f"Find the mice | v. {VERSION}")
 
 levelfile = open("save/level1.json","r+")
+settingsfile = open("save/settings.json","r+")
 
 def asset():
     return f"assets/"
+
+textfile = open(f"{asset()}text.json","r")
+textdict = json.load(textfile)
+
+def lang(id:str,language:str|None=None) -> str:
+    if language == None:
+        return textdict[state.language][id]
+    else:
+        return textdict[language][id]
 
 def img(scr:str) -> pyg.Surface:
     return pyg.image.load(f"{asset()}textures/{scr}")
@@ -24,8 +35,8 @@ def img(scr:str) -> pyg.Surface:
 def sound(scr:str) -> pyg.Sound:
     return pyg.Sound(f"{asset()}sounds/{scr}")
 
-def text(text:str,size:int=20,color:tuple[int,int,int]=(255,255,255),font:str="font1") -> pyg.Surface:
-    return pyg.font.Font(f"{asset()}{font}.ttf",size).render(text,False,color)
+def text(text:str,size:int=20,color:tuple[int,int,int]=(255,255,255),font:str="font1",antialias:bool=False) -> pyg.Surface:
+    return pyg.font.Font(f"{asset()}{font}.ttf",size).render(text,antialias,color)
 
 class DialougePerson:
     def __init__(self,name:str,sound:str="uh.wav",icon:str|None=None):
@@ -139,16 +150,16 @@ class Level:
         # entities
         if pos == (0,0):
             self.entities[pos] = Sign((
-"(Press [E] to advance dialouge)",
-"Welcome to Find the Mice!",
-"This game is about finding mice.",
-"Move your camera with [W] [A] [S] [D].",
-"Be faster by pressing [Left CTRL] while moving.",
-"If you found one...",
-"...move your crosshair over it and press [E].",
-"Your goal is to find all mice",
-"Have fun!",
-f"Seed: {self.seed}")
+lang("tutorial.1"),
+lang("tutorial.2"),
+lang("tutorial.3"),
+lang("tutorial.4"),
+lang("tutorial.5"),
+lang("tutorial.6"),
+lang("tutorial.7"),
+lang("tutorial.8"),
+lang("tutorial.9"),
+f"{lang("tutorial.10")}{self.seed}")
             ,(0,0))
         elif pos == (1,0):
             self.entities[pos] = Mouse((
@@ -172,7 +183,6 @@ f"Seed: {self.seed}")
 
     def savefile(self) -> None:
         print("saving level")
-        global levelfile
         levelfile.truncate(0)
         levelfile.seek(0)
         leveldict = {
@@ -210,6 +220,7 @@ f"Seed: {self.seed}")
                     _dict["texts"].append(dialouge.text)
                 leveldict["entities"]["mice"].append(_dict)
         json.dump(leveldict,levelfile)
+        print("level saved")
 
 
 def loadlevel():
@@ -238,6 +249,16 @@ def loadnewlevel():
     state.plr_pos = [25,25]
     state.level = Level()
 
+def loadsettings():
+    settingsfile.seek(0)
+    _dict = json.load(settingsfile)
+    state.language = _dict["language"]
+
+def savesettings():
+    settingsfile.seek(0)
+    settingsfile.truncate(0)
+    _dict = {"language":state.language}
+    json.dump(_dict,settingsfile)
 
 class GUIElement:
     def __init__(self,pos:tuple[int,int]):
@@ -286,21 +307,35 @@ class GameState:
 
         self.menus:dict[str,GUI] = {
             "mainmenu":GUI({
-                "newgame":GUITextButton((100,100),"New Game"),
-                "continue":GUITextButton((100,130),"Continue"),
-                "quit":GUITextButton((100,170),"Quit"),
-            })
+                "newgame":GUITextButton((100,100),""),
+                "continue":GUITextButton((100,130),""),
+                "settings":GUITextButton((100,160),""),
+                "quit":GUITextButton((100,190),""),
+            }),
+            "settings":GUI({
+                "backmainmenu":GUITextButton((25,50),""),
+                "settings_languageselect":GUITextButton((25,80),""),
+            }),
+            "settings_languageselect":GUI({
+                "settings":GUITextButton((25,50),""),
+            }),
         }
         self.menuopen = True
         self.menuid = "mainmenu"
         self.buttonclicked = False
         self.buttonid = ""
 
+        self.languagelist = ["en","de"]
+        self.language = "en"
+
+
 state = GameState()
 
 def set_menu(id:str):
     if not state.menuopen:
         state.level.savefile()
+    else:
+        print("didnt set from ingame")
     state.menuid = id
     state.buttonid = ""
     state.buttonclicked = False
@@ -309,6 +344,7 @@ def set_menu(id:str):
 def close_menu():
     state.menuopen = False
 
+loadsettings()
 loadnewlevel()
 
 print(f"Seed: {state.level.seed}")
@@ -318,24 +354,25 @@ while running:
     # events
     ## movement
     if state.dialouge == None:
-        if pyg.key.get_pressed()[pyg.K_LCTRL]:
-            if pyg.key.get_pressed()[pyg.K_d] or pyg.key.get_pressed()[pyg.K_RIGHT]:
-                state.plr_pos[0] += 20
-            if pyg.key.get_pressed()[pyg.K_a] or pyg.key.get_pressed()[pyg.K_LEFT]:
-                state.plr_pos[0] += -20
-            if pyg.key.get_pressed()[pyg.K_s] or pyg.key.get_pressed()[pyg.K_DOWN]:
-                state.plr_pos[1] += 20
-            if pyg.key.get_pressed()[pyg.K_w] or pyg.key.get_pressed()[pyg.K_UP]:
-                state.plr_pos[1] += -20
-        else:
-            if pyg.key.get_pressed()[pyg.K_d] or pyg.key.get_pressed()[pyg.K_RIGHT]:
-                state.plr_pos[0] += 5
-            if pyg.key.get_pressed()[pyg.K_a] or pyg.key.get_pressed()[pyg.K_LEFT]:
-                state.plr_pos[0] += -5
-            if pyg.key.get_pressed()[pyg.K_s] or pyg.key.get_pressed()[pyg.K_DOWN]:
-                state.plr_pos[1] += 5
-            if pyg.key.get_pressed()[pyg.K_w] or pyg.key.get_pressed()[pyg.K_UP]:
-                state.plr_pos[1] += -5
+        if not state.menuopen:
+            if pyg.key.get_pressed()[pyg.K_LCTRL]:
+                if pyg.key.get_pressed()[pyg.K_d] or pyg.key.get_pressed()[pyg.K_RIGHT]:
+                    state.plr_pos[0] += 30
+                if pyg.key.get_pressed()[pyg.K_a] or pyg.key.get_pressed()[pyg.K_LEFT]:
+                    state.plr_pos[0] += -30
+                if pyg.key.get_pressed()[pyg.K_s] or pyg.key.get_pressed()[pyg.K_DOWN]:
+                    state.plr_pos[1] += 30
+                if pyg.key.get_pressed()[pyg.K_w] or pyg.key.get_pressed()[pyg.K_UP]:
+                    state.plr_pos[1] += -30
+            else:
+                if pyg.key.get_pressed()[pyg.K_d] or pyg.key.get_pressed()[pyg.K_RIGHT]:
+                    state.plr_pos[0] += 10
+                if pyg.key.get_pressed()[pyg.K_a] or pyg.key.get_pressed()[pyg.K_LEFT]:
+                    state.plr_pos[0] += -10
+                if pyg.key.get_pressed()[pyg.K_s] or pyg.key.get_pressed()[pyg.K_DOWN]:
+                    state.plr_pos[1] += 10
+                if pyg.key.get_pressed()[pyg.K_w] or pyg.key.get_pressed()[pyg.K_UP]:
+                    state.plr_pos[1] += -10
 
     _leftclick = False
     for event in pyg.event.get():
@@ -380,13 +417,43 @@ while running:
         if state.buttonid == "quit":
             running = False
         elif state.buttonid == "continue":
-            print("continuing")
-            loadlevel()
-            close_menu()
+            levelfile.seek(0)
+            if levelfile.read() == "":
+                print("level file empty")
+            else:
+                loadlevel()
+                close_menu()
         elif state.buttonid == "newgame":
-            print("newgame")
             loadnewlevel()
             close_menu()
+        elif state.buttonid == "settings":
+            set_menu("settings")
+        elif state.buttonid == "backmainmenu":
+            set_menu("mainmenu")
+        elif state.buttonid == "settings_languageselect":
+            set_menu("settings_languageselect")
+        elif "language_" in state.buttonid:
+            state.language = state.buttonid[9:]
+    ## gui refresh
+    if state.menuopen:
+        state.menus = {
+            "mainmenu":GUI({
+                "newgame":GUITextButton((100,100),lang("newgame")),
+                "continue":GUITextButton((100,130),lang("continue")),
+                "settings":GUITextButton((100,170),lang("settings")),
+                "quit":GUITextButton((100,200),lang("quit")),
+            }),
+            "settings":GUI({
+                "backmainmenu":GUITextButton((25,50),lang("back")),
+                "settings_languageselect":GUITextButton((25,80),lang("select_language")),
+            }),
+            "settings_languageselect":GUI({
+                "settings":GUITextButton((25,50),lang("back")),
+            }),
+        }
+        for i,_language in enumerate(state.languagelist):
+            state.menus["settings_languageselect"].elements[f"language_{_language}"] = GUITextButton((25,i*30+100),f"{lang(f'language.{_language}')} ({lang(f'language.{_language}',_language)})")
+            
 
     # render
     ## black bg
@@ -417,10 +484,13 @@ while running:
         state.buttonid = _id
     else:
         ## tiles
+        _usedtiles = list(state.level.tiles.keys())
         for x in range(state.plr_tile[0]-8, state.plr_tile[0]+9):
             for y in range(state.plr_tile[1]-5, state.plr_tile[1]+6):
                 if state.level.findpostile((x,y)):
 
+                    _usedtiles.remove((x,y))
+                    
                     _tile = state.level.tiles[(x,y)]
                     _pos = (_tile.pos[0]*50 + -1*state.plr_pos[0] + 350, _tile.pos[1]*50 + -1*state.plr_pos[1] + 200)
                     screen.blit(img(f"tiles/{_tile.texture}.png"),_pos)
@@ -429,9 +499,12 @@ while running:
                     _overlay.fill((0,0,0))
                     _overlay.set_alpha(round(((abs(_tile.perlin) - abs(state.level.tiles[(state.plr_tile[0],state.plr_tile[1])].perlin))*-100)))
                     screen.blit(_overlay,_pos)
-
                 else:
                     state.level.gen((x,y))
+
+        for _tile in _usedtiles:
+            state.level.tiles.pop(_tile)
+        
         ## entities
         for _entity in state.level.entities.values():
 
@@ -458,11 +531,17 @@ while running:
                 screen.blit(img(state.dialouge.person.icon),(0,300))
                 screen.blit(text(state.dialouge.person.name),(110,310))
                 screen.blit(text(state.dialouge.text,size=30),(110,330))
-
+    ## fps
+    #screen.blit(text(f"FPS: {round(clock.get_fps())}",15,color=(0,0,0),antialias=False),(11,11))
+    screen.blit(text(f"FPS: {round(clock.get_fps())}",15,antialias=True),(10,10))
+    
     pyg.display.flip()
+    clock.tick(60)
 
     #print(state.buttonid,state.buttonclicked)
 
 state.level.savefile()
+savesettings()
 levelfile.close()
+textfile.close()
 pyg.quit()

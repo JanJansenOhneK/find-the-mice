@@ -1,0 +1,46 @@
+{
+    "en":{
+        "newgame":"New Game",
+        "continue":"Continue",
+        "settings":"Settings",
+        "quit":"Quit",
+        "back":"Back",
+        "select_language":"Select Language",
+
+        "language.en":"English",
+        "language.de":"German",
+
+        "tutorial.1":"(Press [E] to advance dialouge)",
+        "tutorial.2":"Welcome to 'Find the Mice'!",
+        "tutorial.3":"This game is about finding mice.",
+        "tutorial.4":"Move your camera with [W] [A] [S] [D].",
+        "tutorial.5":"Be faster by pressing [Left CTRL] while moving.",
+        "tutorial.6":"If you found one...",
+        "tutorial.7":"...move your crosshair over it and press [E].",
+        "tutorial.8":"Your goal is to find all mice",
+        "tutorial.9":"Have fun!",
+        "tutorial.10":"Seed: "
+    },
+    "de":{
+        "newgame":"Neues Spiel",
+        "continue":"Weiterspielen",
+        "settings":"Einstellungen",
+        "quit":"Spiel schliessen",
+        "back":"Zurueck",
+        "select_language":"Sprache auswaehlen",
+
+        "language.en":"Englisch",
+        "language.de":"Deutsch",
+
+        "tutorial.1":"(Druecke [E] um zu sprechen)",
+        "tutorial.2":"Willkommen zu 'Find the Mice'!",
+        "tutorial.3":"Dieses Spiel ist ueber Maeuse finden.",
+        "tutorial.4":"Bewege deine Kamera mit [W] [A] [S] [D].",
+        "tutorial.5":"Bewege dich schneller indem du [Left CTRL] drueckst.",
+        "tutorial.6":"Wenn du eine gefunden hast...",
+        "tutorial.7":"...beweg das Kreuz ueber sie und druecke [E].",
+        "tutorial.8":"Das Ziel ist es alle Maeuse zu finden",
+        "tutorial.9":"Viel Spass!",
+        "tutorial.10":"Seed: "
+    }
+}

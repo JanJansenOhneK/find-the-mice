@@ -43,9 +43,13 @@
 ### MAJOR FEATURES
 #### ADDED GUI
 - press escape ingame to return to the main menu
-## dev 7 (First Version with loadable Savefiles!)
+## dev 8 (First Version with loadable Savefiles!)
 ### BUGFIX
-- now you cannot exit to main menu while dialouging
+- you cannot exit to main menu while dialouging
+- you cannot move while being in a menu
 ### MINOR FEATURES
+- added fps counter
 ### MAJOR FEATURES
 #### made save files loadable!
+## dev 9
+#### language system

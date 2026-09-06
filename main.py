@@ -1,5 +1,5 @@
 
-VERSION = "dev9"
+VERSION = "dev10"
 
 import random as rand
 import math
@@ -25,9 +25,15 @@ textdict = json.load(textfile)
 
 def lang(id:str,language:str|None=None) -> str:
     if language == None:
-        return textdict[state.language][id]
+        if id in textdict[state.language].keys():
+            return textdict[state.language][id]
+        else:
+            return textdict["en"][id]
     else:
-        return textdict[language][id]
+        if id in textdict[state.language].keys():
+            return textdict[language][id]
+        else:
+            return textdict["en"][id]
 
 def img(scr:str) -> pyg.Surface:
     return pyg.image.load(f"{asset()}textures/{scr}")
@@ -39,7 +45,7 @@ def text(text:str,size:int=20,color:tuple[int,int,int]=(255,255,255),font:str="f
     return pyg.font.Font(f"{asset()}{font}.ttf",size).render(text,antialias,color)
 
 class DialougePerson:
-    def __init__(self,name:str,sound:str="uh.wav",icon:str|None=None):
+    def __init__(self,name:str,icon:str|None=None,sound:str="uh.wav"):
         self.name = name
         self.sound = sound
         self.icon = icon
@@ -79,34 +85,19 @@ class Entity:
         pass
     def interact(self):
         pass
-class Sign(Entity):
-    def __init__(self,texts:tuple[str,...],pos:tuple[int,int]):
-        super().__init__()
-        self.pos = pos
-        self.texture = "sign.png"
-        self.dialouges = []
-        self.interactable = True
-        for _text in texts:
-            self.dialouges.append(Dialouge(_text,DP_SIGN))
-    def frame(self):
-        pass
-    def interact(self):
-        state.dialouge = self.dialouges[0]
-        state.dialougequeue = self.dialouges[1:]
 class Mouse(Entity):
-    def __init__(self,texts:tuple[str,...],dp:DialougePerson,pos:tuple[int,int],textures:tuple[str,...],fpf:int=5):
+    def __init__(self,id:str,name:str,dp:DialougePerson,pos:tuple[int,int],textures:tuple[str,...],fpf:int=5):
         super().__init__()
+        self.id = id
+        self.name = name
         self.pos = pos
         self.textures = textures
         self.textureframe = 0
         self.fpf = fpf
         self.texture = self.textures[0]
-        self.dialouges = []
         self.dp = dp
         self.interactable = True
         self.found = False
-        for _text in texts:
-            self.dialouges.append(Dialouge(_text,self.dp))
     def frame(self):
         if self.textureframe % self.fpf == 0:
             self.texture = self.textures[self.textureframe // self.fpf]
@@ -119,16 +110,31 @@ class Mouse(Entity):
             print(f"{self.dp.name} found")
             
         self.found = True
-        state.dialouge = self.dialouges[0]
-        state.dialougequeue = self.dialouges[1:]
+        state.dialouge = Dialouge(lang(f"mouse.{self.id}.0"),self.dp)
+        i = 1
+        while f"mouse.{self.id}.{i}" in textdict[state.language].keys():
+            state.dialougequeue.append(Dialouge(lang(f"mouse.{self.id}.{i}"),self.dp))
+            i += 1
 
+mousedict:dict[str,Mouse] = {
+    "linux":Mouse(
+        "linux",
+        "Linux Mouse",
+        DialougePerson("Linux Mouse"),
+        (0,0),
+        ("mice/linux1.png","mice/linux2.png")
+    )
+}
 
 class Level:
     def __init__(self):
         self.seed = rand.randint(-999,999)
         self.noise = noise.PerlinNoise(5,self.seed)
         self.tiles:dict[tuple[int,int],Tile] = {}
-        self.entities:dict[tuple[int,int],Entity] = {}
+
+        self.mice:dict[tuple[int,int],str] = {}
+        self.entities:dict[tuple[int,int],Mouse] = {}
+        self.genmice:list[str] = []
 
     def gen(self,pos:tuple[int,int]):
         _perlin = self.noise((pos[0]/50,pos[1]/50))
@@ -148,28 +154,25 @@ class Level:
         self.tiles[pos] = Tile(pos,_type,_perlin)
 
         # entities
-        if pos == (0,0):
-            self.entities[pos] = Sign((
-lang("tutorial.1"),
-lang("tutorial.2"),
-lang("tutorial.3"),
-lang("tutorial.4"),
-lang("tutorial.5"),
-lang("tutorial.6"),
-lang("tutorial.7"),
-lang("tutorial.8"),
-lang("tutorial.9"),
-f"{lang("tutorial.10")}{self.seed}")
-            ,(0,0))
-        elif pos == (1,0):
-            self.entities[pos] = Mouse((
-"Test dialouge",
-"Also Test dialouge",
-"Maus"),DialougePerson("Test Mouse"),(1,0),(
-"mice/normal.png",
-"mice/normal2.png",
-"mice/normal3.png",
-))
+
+
+#        elif pos == (1,0):
+#            self.entities[pos] = Mouse((
+#"Test dialouge",
+#"Also Test dialouge",
+#"Maus"),DialougePerson("Test Mouse"),(1,0),(
+#"mice/normal.png",
+#"mice/normal2.png",
+#"mice/normal3.png",
+#))      
+
+        if not "linux" in self.genmice:
+            if _type == "grass":
+                if rand.randint(0,100) == 1:
+                    self.genmice.append("linux")
+                    self.entities[pos] = mousedict["linux"]
+                    self.entities[pos].pos = pos
+            
             
     def genrect(self,rect:tuple[tuple[int,int],tuple[int,int]]):
         for x in range(rect[1][0]):
@@ -188,7 +191,7 @@ f"{lang("tutorial.10")}{self.seed}")
         leveldict = {
             "plrpos":[state.plr_pos[0],state.plr_pos[1]],
             "seed":self.seed,
-            "entities":{"signs":[],"mice":[]}
+            "entities":[]
         }
         """
         for tile in self.tiles.values():
@@ -198,27 +201,12 @@ f"{lang("tutorial.10")}{self.seed}")
             })
         """
         for entity in self.entities.values():
-            if type(entity) == Sign:
-                _dict = {
-                    "pos":list(entity.pos),
-                    "texts":[]
-                }
-                for dialouge in entity.dialouges:
-                    _dict["texts"].append(dialouge.text)
-                leveldict["entities"]["signs"].append(_dict)
-
-            elif type(entity) == Mouse:
-                _dict = {
-                    "pos":list(entity.pos),
-                    "texts":[],
-                    "textures":list(entity.textures),
-                    "fpf":entity.fpf,
-                    "found":entity.found,
-                    "dp":{"name":entity.dp.name,"icon":entity.dp.icon,"sound":entity.dp.sound}
-                }
-                for dialouge in entity.dialouges:
-                    _dict["texts"].append(dialouge.text)
-                leveldict["entities"]["mice"].append(_dict)
+            _dict = {
+                "pos":list(entity.pos),
+                "found":entity.found,
+                "id":entity.id
+            }
+            leveldict["entities"].append(_dict)
         json.dump(leveldict,levelfile)
         print("level saved")
 
@@ -228,17 +216,8 @@ def loadlevel():
     _dict = json.load(levelfile)
     _level = Level()
     _level.seed = _dict["seed"]
-    for _sign in _dict["entities"]["signs"]:
-        _signobj = Sign(tuple(_sign["texts"]),_sign["pos"])
-        _level.entities[tuple(_sign["pos"])] = _signobj
-    for _mouse in _dict["entities"]["mice"]:
-        _mouseobj = Mouse(
-            tuple(_mouse["texts"]),
-            DialougePerson(_mouse["dp"]["name"],_mouse["dp"]["sound"],_mouse["dp"]["icon"]),
-            _mouse["pos"],
-            tuple(_mouse["textures"]),
-            _mouse["fpf"]
-        )
+    for _mouse in _dict["entities"]:
+        _mouseobj = mousedict[_mouse["id"]]
         _mouseobj.found = _mouse["found"]
         _level.entities[tuple(_mouse["pos"])] = _mouseobj
     state.plr_pos = [_dict["plrpos"][0],_dict["plrpos"][1]]
@@ -297,6 +276,16 @@ class GUI:
         self.caption = caption
         self.elements = elements
 
+micedict = {
+    "linux":Mouse(
+        "linux",
+        "Linux Mouse",
+        DialougePerson("Linux Mouse"),
+        (0,0),
+        ("mice/linux1.png","mice/linux2.png")
+    )
+}
+
 class GameState:
     def __init__(self):
         self.level = Level()
@@ -332,10 +321,10 @@ class GameState:
 state = GameState()
 
 def set_menu(id:str):
-    if not state.menuopen:
-        state.level.savefile()
-    else:
+    if state.menuopen:
         print("didnt set from ingame")
+    else:
+        state.level.savefile()
     state.menuid = id
     state.buttonid = ""
     state.buttonclicked = False

@@ -19,7 +19,9 @@
         "tutorial.7":"...move your crosshair over it and press [E].",
         "tutorial.8":"Your goal is to find all mice",
         "tutorial.9":"Have fun!",
-        "tutorial.10":"Seed: "
+        "tutorial.10":"Seed: ",
+
+        "mouse.linux.0":"I use arch btw"
     },
     "de":{
         "newgame":"Neues Spiel",
@@ -41,6 +43,8 @@
         "tutorial.7":"...beweg das Kreuz ueber sie und druecke [E].",
         "tutorial.8":"Das Ziel ist es alle Maeuse zu finden",
         "tutorial.9":"Viel Spass!",
-        "tutorial.10":"Seed: "
+        "tutorial.10":"Seed: ",
+
+        "mouse.linux.0":"Ich benutze arch btw"
     }
 }

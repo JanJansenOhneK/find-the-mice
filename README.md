@@ -53,3 +53,10 @@
 #### made save files loadable!
 ## dev 9
 #### language system
+## dev 10 (CHANGED SAVEFILE SYSTEM)
+### BUGFIX
+### MINOR FEATURES
+### MAJOR FEATURES
+#### CHANGED SAVEFILE SYSTEM
+- removed tutorial sign
+- added linux mouse

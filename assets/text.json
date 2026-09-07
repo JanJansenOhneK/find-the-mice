@@ -6,22 +6,29 @@
         "quit":"Quit",
         "back":"Back",
         "select_language":"Select Language",
+        "reset_savefile":"Reset Savefile",
 
         "language.en":"English",
         "language.de":"German",
 
-        "tutorial.1":"(Press [E] to advance dialouge)",
-        "tutorial.2":"Welcome to 'Find the Mice'!",
-        "tutorial.3":"This game is about finding mice.",
-        "tutorial.4":"Move your camera with [W] [A] [S] [D].",
-        "tutorial.5":"Be faster by pressing [Left CTRL] while moving.",
-        "tutorial.6":"If you found one...",
-        "tutorial.7":"...move your crosshair over it and press [E].",
-        "tutorial.8":"Your goal is to find all mice",
-        "tutorial.9":"Have fun!",
-        "tutorial.10":"Seed: ",
+        "mouse.tutorial.name":"Tutorial Mouse",
+        "mouse.tutorial.0":"(Press [E] to advance dialouge)",
+        "mouse.tutorial.1":"Welcome to 'Find the Mice'!",
+        "mouse.tutorial.2":"This game is about finding mice.",
+        "mouse.tutorial.3":"Move your camera with [W] [A] [S] [D].",
+        "mouse.tutorial.4":"Be faster by pressing [Left CTRL] while moving.",
+        "mouse.tutorial.5":"If you found one...",
+        "mouse.tutorial.6":"...move your crosshair over it and press [E].",
+        "mouse.tutorial.7":"Your goal is to find all mice",
+        "mouse.tutorial.8":"Have fun!",
 
-        "mouse.linux.0":"I use arch btw"
+        "mouse.linux.name":"Linux Mouse",
+        "mouse.linux.0":"I use arch btw",
+        
+        "mouse.book.name":"Book Mouse that informs you about the menu that pops up when you press [Q]",
+        "mouse.book.0":"Yo",
+        "mouse.book.1":"Did you know about the menu,",
+        "mouse.book.2":"it pops up when you press [Q]"
     },
     "de":{
         "newgame":"Neues Spiel",
@@ -30,21 +37,28 @@
         "quit":"Spiel schliessen",
         "back":"Zurueck",
         "select_language":"Sprache auswaehlen",
+        "reset_savefile":"Setze Spiel zurueck",
 
         "language.en":"Englisch",
         "language.de":"Deutsch",
 
-        "tutorial.1":"(Druecke [E] um zu sprechen)",
-        "tutorial.2":"Willkommen zu 'Find the Mice'!",
-        "tutorial.3":"Dieses Spiel ist ueber Maeuse finden.",
-        "tutorial.4":"Bewege deine Kamera mit [W] [A] [S] [D].",
-        "tutorial.5":"Bewege dich schneller indem du [Left CTRL] drueckst.",
-        "tutorial.6":"Wenn du eine gefunden hast...",
-        "tutorial.7":"...beweg das Kreuz ueber sie und druecke [E].",
-        "tutorial.8":"Das Ziel ist es alle Maeuse zu finden",
-        "tutorial.9":"Viel Spass!",
-        "tutorial.10":"Seed: ",
+        "mouse.tutorial.name":"Tutorial Maus",
+        "mouse.tutorial.0":"(Druecke [E] um zu sprechen)",
+        "mouse.tutorial.1":"Willkommen zu 'Find the Mice'!",
+        "mouse.tutorial.2":"Dieses Spiel ist ueber Maeuse finden.",
+        "mouse.tutorial.3":"Bewege deine Kamera mit [W] [A] [S] [D].",
+        "mouse.tutorial.4":"Bewege dich schneller indem du [Left CTRL] drueckst.",
+        "mouse.tutorial.5":"Wenn du eine gefunden hast...",
+        "mouse.tutorial.6":"...beweg das Kreuz ueber sie und druecke [E].",
+        "mouse.tutorial.7":"Das Ziel ist es alle Maeuse zu finden",
+        "mouse.tutorial.8":"Viel Spass!",
 
-        "mouse.linux.0":"Ich benutze arch btw"
+        "mouse.linux.name":"Linux Maus",
+        "mouse.linux.0":"Ich benutze arch btw",
+
+        "mouse.book.name":"Buch Maus die dich ueber das Menue informiert das kommt wenn do [Q] drueckst",
+        "mouse.book.0":"Yo",
+        "mouse.book.1":"Wusstest du ueber das Menue,",
+        "mouse.book.2":"es kommt wenn du [Q] druecks"
     }
 }

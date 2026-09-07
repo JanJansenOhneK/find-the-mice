@@ -1,1 +1,1 @@
-{"plrpos": [25, 25], "seed": -338, "entities": [{"pos": [1, -2], "found": false, "id": "linux"}]}
+{"plrpos": [15, 15], "seed": 91, "entities": [{"pos": [-8, -5], "found": false, "id": "linux"}, {"pos": [0, -1], "found": false, "id": "book"}, {"pos": [0, 0], "found": false, "id": "tutorial"}]}

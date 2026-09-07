@@ -1,9 +1,11 @@
 
 
 # DEPENDENCIES
+## Python
+Python 3.14.6
 ## Python modules
 - pygame
-- noise
+- perlin-noise
 # CHANGELOG
 ## dev 2
 - added Water
@@ -60,3 +62,10 @@
 #### CHANGED SAVEFILE SYSTEM
 - removed tutorial sign
 - added linux mouse
+## dev 11
+### BUGFIX
+### MINOR FEATURES
+- added favicon
+### MAJOR FEATURES
+- added tutorial mouse
+- added book mouse (there is currently no menu that pops up when you press [Q])

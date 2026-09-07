@@ -1,5 +1,5 @@
 
-VERSION = "dev10"
+VERSION = "dev11"
 
 import random as rand
 import math
@@ -37,6 +37,8 @@ def lang(id:str,language:str|None=None) -> str:
 
 def img(scr:str) -> pyg.Surface:
     return pyg.image.load(f"{asset()}textures/{scr}")
+
+pyg.display.set_icon(img("favicon1.png"))
 
 def sound(scr:str) -> pyg.Sound:
     return pyg.Sound(f"{asset()}sounds/{scr}")
@@ -86,19 +88,23 @@ class Entity:
     def interact(self):
         pass
 class Mouse(Entity):
-    def __init__(self,id:str,name:str,dp:DialougePerson,pos:tuple[int,int],textures:tuple[str,...],fpf:int=5):
+    def __init__(self,id:str,pos:tuple[int,int],textures:tuple[str,...],fpf:int=5,dpicon:str|None=None):
         super().__init__()
         self.id = id
-        self.name = name
+        self.name = ""
         self.pos = pos
         self.textures = textures
         self.textureframe = 0
         self.fpf = fpf
         self.texture = self.textures[0]
-        self.dp = dp
+        self.dp = DialougePerson("")
+        self.dpicon = dpicon
         self.interactable = True
         self.found = False
     def frame(self):
+        self.name = lang(f"mouse.{self.id}.name")
+        self.dp = DialougePerson(self.name,self.dpicon)
+
         if self.textureframe % self.fpf == 0:
             self.texture = self.textures[self.textureframe // self.fpf]
         self.textureframe += 1
@@ -116,15 +122,25 @@ class Mouse(Entity):
             state.dialougequeue.append(Dialouge(lang(f"mouse.{self.id}.{i}"),self.dp))
             i += 1
 
+
 mousedict:dict[str,Mouse] = {
     "linux":Mouse(
         "linux",
-        "Linux Mouse",
-        DialougePerson("Linux Mouse"),
         (0,0),
         ("mice/linux1.png","mice/linux2.png")
-    )
+    ),
+    "tutorial":Mouse(
+        "tutorial",
+        (0,0),
+        ("mice/tutorial1.png","mice/tutorial2.png")
+    ),
+    "book":Mouse(
+        "book",
+        (0,0),
+        ("mice/book1.png","mice/book2.png")
+    ),
 }
+
 
 class Level:
     def __init__(self):
@@ -135,6 +151,11 @@ class Level:
         self.mice:dict[tuple[int,int],str] = {}
         self.entities:dict[tuple[int,int],Mouse] = {}
         self.genmice:list[str] = []
+
+    def append_mouse(self,id:str,pos:tuple[int,int]):
+        self.genmice.append(id)
+        self.entities[pos] = mousedict[id]
+        self.entities[pos].pos = pos
 
     def gen(self,pos:tuple[int,int]):
         _perlin = self.noise((pos[0]/50,pos[1]/50))
@@ -154,24 +175,17 @@ class Level:
         self.tiles[pos] = Tile(pos,_type,_perlin)
 
         # entities
-
-
-#        elif pos == (1,0):
-#            self.entities[pos] = Mouse((
-#"Test dialouge",
-#"Also Test dialouge",
-#"Maus"),DialougePerson("Test Mouse"),(1,0),(
-#"mice/normal.png",
-#"mice/normal2.png",
-#"mice/normal3.png",
-#))      
-
-        if not "linux" in self.genmice:
+        _rand = rand.randint(0,100)
+        if pos == (0,0):
+            self.append_mouse("tutorial",pos)
+        elif not "linux" in self.genmice:
             if _type == "grass":
-                if rand.randint(0,100) == 1:
-                    self.genmice.append("linux")
-                    self.entities[pos] = mousedict["linux"]
-                    self.entities[pos].pos = pos
+                if _rand == 1:
+                    self.append_mouse("linux",pos)
+        elif not "book" in self.genmice:
+            if not _type in ("water","snow"):
+                if _rand == 2:
+                    self.append_mouse("book",pos)
             
             
     def genrect(self,rect:tuple[tuple[int,int],tuple[int,int]]):
@@ -275,16 +289,6 @@ class GUI:
     def __init__(self,elements:dict[str,GUIElement],caption:str=""):
         self.caption = caption
         self.elements = elements
-
-micedict = {
-    "linux":Mouse(
-        "linux",
-        "Linux Mouse",
-        DialougePerson("Linux Mouse"),
-        (0,0),
-        ("mice/linux1.png","mice/linux2.png")
-    )
-}
 
 class GameState:
     def __init__(self):
@@ -421,6 +425,9 @@ while running:
             set_menu("mainmenu")
         elif state.buttonid == "settings_languageselect":
             set_menu("settings_languageselect")
+        elif state.buttonid == "resetsavefile":
+            levelfile.seek(0)
+            levelfile.truncate(0)
         elif "language_" in state.buttonid:
             state.language = state.buttonid[9:]
     ## gui refresh
@@ -435,6 +442,7 @@ while running:
             "settings":GUI({
                 "backmainmenu":GUITextButton((25,50),lang("back")),
                 "settings_languageselect":GUITextButton((25,80),lang("select_language")),
+                "resetsavefile":GUITextButton((25,110),lang("reset_savefile")),
             }),
             "settings_languageselect":GUI({
                 "settings":GUITextButton((25,50),lang("back")),
